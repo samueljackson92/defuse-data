@@ -101,16 +101,14 @@ def main(path: str):
     # datasets['xdc/ip_t_ipref'].attrs['units'] = 'A'
 
     # # Combine hcam/tcam channels
-    datasets['xsx/hcam'] = combine_channels(datasets, hcam_channels)
+    datasets['asx/hcam'] = combine_channels(datasets, hcam_channels)
 
     remove_channels(datasets, hcam_channels)
 
-    # # Add parameters for hcam/tcam
-    # add_camera_parameters(datasets, 'xsx/tcam', 'xsx_camera_l.csv')
-    # add_camera_parameters(datasets, 'xsx/hcam_l', 'xsx_camera_u.csv')
-    # add_camera_parameters(datasets, 'xsx/hcam_u', 'xsx_camera_t.csv')
+    # Add parameters for hcam/tcam
+    add_camera_parameters(datasets, 'asx/hcam', 'mast-u_asx_calibration.csv')
 
-    # # Write files
+    # Write files
     file_name = Path(path.name)
     write_zarr(datasets, file_name)
     convert_to_hdf(file_name)
