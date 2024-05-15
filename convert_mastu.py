@@ -93,12 +93,13 @@ def main(path: str):
     datasets = load_signals(path, defuse_signals)
     datasets = {name: standardise_names(ds) for name, ds in datasets.items()}
 
-    # # Rescale plasma current
-    # datasets['amc/plasma_current']['data'] * 1000
-    # datasets['amc/plasma_current'].attrs['units'] = 'A'
-    # # Rescale ipref 
-    # datasets['xdc/ip_t_ipref']['data'] * 1000 * 1000
-    # datasets['xdc/ip_t_ipref'].attrs['units'] = 'A'
+    # Rescale plasma current
+    datasets['ip']['data'] * 1000
+    datasets['ip'].attrs['units'] = 'A'
+
+    # Rescale ipref 
+    datasets['xdc/plasma_t_ip_ref']['data'] * 1000
+    datasets['xdc/plasma_t_ip_ref'].attrs['units'] = 'A'
 
     # # Combine hcam/tcam channels
     datasets['asx/hcam'] = combine_channels(datasets, hcam_channels)
