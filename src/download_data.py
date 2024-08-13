@@ -1,3 +1,4 @@
+import argparse
 import intake
 from pathlib import Path
 import xarray as xr
@@ -13,9 +14,17 @@ def drop_attrs(dataset: xr.Dataset):
 
 
 def main():
-    dest_file = Path("30420.nc")
+    parser = argparse.ArgumentParser(
+        prog="Download file",
+    )
 
-    url = "s3://mast/test/shots/30420.zarr"
+    parser.add_argument("url")
+    parser.add_argument("file_name")
+    args = parser.parse_args()
+
+    dest_file = Path(args.file_name)
+    url = args.url
+
     catalog = intake.open_catalog("https://mastapp.site/intake/catalog.yml")
 
     if dest_file.exists():
