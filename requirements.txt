@@ -1,5 +1,14 @@
+intake
+intake_xarray
+requests
+s3fs
+jinja2
 xarray
 zarr
 matplotlib
 h5py
+dask
+dask_mpi
+distributed
+mpi4py
 pytest
