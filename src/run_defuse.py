@@ -2,7 +2,7 @@ import os
 import argparse
 import subprocess
 import logging
-import intake
+import s3fs
 import pandas as pd
 import xarray as xr
 from dask.distributed import Client, as_completed
@@ -21,7 +21,6 @@ def drop_attrs(dataset: xr.Dataset):
 
 
 def download_data(url: str, dest_file: str):
-    catalog = intake.open_catalog("https://mastapp.site/intake/catalog.yml")
 
     dest_file = Path(dest_file)
 
@@ -31,8 +30,15 @@ def download_data(url: str, dest_file: str):
     sources = ["amc", "efm", "esm", "xdc", "xsx"]
 
     for key in sources:
-        dataset = catalog.level1.sources(url=f"{url}/{key}")
-        dataset = dataset.read()
+        file_name = f"{url}/{key}"
+        endpoint_url = "https://s3.echo.stfc.ac.uk/"
+        fs = s3fs.S3FileSystem(anon=True, endpoint_url=endpoint_url)
+        try:
+            dataset = xr.load_dataset(fs.get_mapper(file_name), engine='zarr')
+        except Exception as e:
+            logging.error(f'Cannot load data {file_name}')
+            raise e
+
         dataset = drop_attrs(dataset)
 
         if key == "amc":
@@ -45,13 +51,13 @@ def download_data(url: str, dest_file: str):
 
 
 def run_defuse(shot_id: int):
-    print("Running defuse")
+    logging.info("Running defuse")
     script_command = f"\"setup_DEFUSE_paths;Run_DEFUSE_batch_default('MAST', {shot_id}, access_mode='server', save_mode='hdf5');exit;\""
     command = ["matlab", "-nodisplay", "-nosplash", "-nodesktop", "-r", script_command]
     command = ' '.join(command)
-    print(command)
+    logging.info(command)
     result = subprocess.run(command, cwd="./defuse", shell=True, capture_output=True, text=True)
-    print(result.stdout)
+    logging.info(result.stdout)
 
 
 def cleanup(input_file: str):
@@ -61,14 +67,17 @@ def cleanup(input_file: str):
 
 
 def predict_defuse(shot_id: int, url: str, output_folder: str):
+    input_file = Path(output_folder) / f"{shot_id}.nc"
+    logging.info(url, '--->', input_file)
+
     try:
-        input_file = Path(output_folder) / f"{shot_id}.nc"
-        print(url, '--->', input_file)
         download_data(url, input_file)
         run_defuse(shot_id)
-        cleanup(input_file)
     except Exception as e:
         logging.error(f'Exception: {e}')
+    finally:
+        cleanup(input_file)
+
     return shot_id
 
 def main():
@@ -89,6 +98,7 @@ def main():
     output_folder = Path(args.output_folder)
 
     shot_df = pd.read_csv(shot_file)
+    shot_df = shot_df.sort_values('shot_id', ascending=False)
     
     client = Client()
     tasks = []
